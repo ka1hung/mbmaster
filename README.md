@@ -5,7 +5,7 @@
 
 ## install
 
-    go get github.com/ka1hung/mbmaster
+    go get -u github.com/ka1hung/mbmaster
 
 ## simple example
 
