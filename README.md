@@ -1,5 +1,5 @@
 
-# Simple modbus master master tool
+# Simple modbusRTU master tool
 
 # Quick start
 
