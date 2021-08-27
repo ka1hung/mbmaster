@@ -4,7 +4,6 @@ import (
 	"errors"
 	"time"
 
-	// "mbmaster/serial"
 	"github.com/goburrow/serial"
 )
 
@@ -30,13 +29,13 @@ func NewMaster(com string, br int, timeout time.Duration) *Master {
 	return m
 }
 
-//ReadCoil mdbus function 1 qurry and return []uint16
+//ReadCoil mdbus function 1 query and return []uint16
 func (m *Master) ReadCoil(id uint8, addr uint16, leng uint16) ([]bool, error) {
 
 	wbuf := []byte{id, 0x01, byte(addr >> 8), byte(addr), byte(leng >> 8), byte(leng)}
 
 	//write
-	res, err := Qurry(m, wbuf)
+	res, err := Query(m, wbuf)
 	if err != nil {
 		return []bool{}, err
 	}
@@ -58,13 +57,13 @@ func (m *Master) ReadCoil(id uint8, addr uint16, leng uint16) ([]bool, error) {
 	return result, nil
 }
 
-//ReadCoilIn mdbus function 2 qurry and return []uint16
+//ReadCoilIn mdbus function 2 query and return []uint16
 func (m *Master) ReadCoilIn(id uint8, addr uint16, leng uint16) ([]bool, error) {
 
 	wbuf := []byte{id, 0x02, byte(addr >> 8), byte(addr), byte(leng >> 8), byte(leng)}
 
 	//write
-	res, err := Qurry(m, wbuf)
+	res, err := Query(m, wbuf)
 	if err != nil {
 		return []bool{}, err
 	}
@@ -86,13 +85,13 @@ func (m *Master) ReadCoilIn(id uint8, addr uint16, leng uint16) ([]bool, error) 
 	return result, nil
 }
 
-//ReadReg mdbus function 3 qurry and return []uint16
+//ReadReg mdbus function 3 query and return []uint16
 func (m *Master) ReadReg(id uint8, addr uint16, leng uint16) ([]uint16, error) {
 
 	wbuf := []byte{id, 0x03, byte(addr >> 8), byte(addr), byte(leng >> 8), byte(leng)}
 
 	//write
-	res, err := Qurry(m, wbuf)
+	res, err := Query(m, wbuf)
 	if err != nil {
 		return []uint16{}, err
 	}
@@ -109,13 +108,13 @@ func (m *Master) ReadReg(id uint8, addr uint16, leng uint16) ([]uint16, error) {
 	return result, nil
 }
 
-//ReadRegIn mdbus function 4 qurry and return []uint16
+//ReadRegIn mdbus function 4 query and return []uint16
 func (m *Master) ReadRegIn(id uint8, addr uint16, leng uint16) ([]uint16, error) {
 
 	wbuf := []byte{id, 0x04, byte(addr >> 8), byte(addr), byte(leng >> 8), byte(leng)}
 
 	//write
-	res, err := Qurry(m, wbuf)
+	res, err := Query(m, wbuf)
 	if err != nil {
 		return []uint16{}, err
 	}
@@ -132,7 +131,7 @@ func (m *Master) ReadRegIn(id uint8, addr uint16, leng uint16) ([]uint16, error)
 	return result, nil
 }
 
-//WriteCoil mdbus function 5 qurry and return []uint16
+//WriteCoil mdbus function 5 query and return []uint16
 func (m *Master) WriteCoil(id uint8, addr uint16, data bool) error {
 
 	var wbuf = []byte{}
@@ -143,7 +142,7 @@ func (m *Master) WriteCoil(id uint8, addr uint16, data bool) error {
 	}
 
 	//write
-	_, err := Qurry(m, wbuf)
+	_, err := Query(m, wbuf)
 	if err != nil {
 		return err
 	}
@@ -151,13 +150,13 @@ func (m *Master) WriteCoil(id uint8, addr uint16, data bool) error {
 	return nil
 }
 
-//WriteReg mdbus function 6 qurry and return []uint16
+//WriteReg mdbus function 6 query and return []uint16
 func (m *Master) WriteReg(id uint8, addr uint16, data uint16) error {
 
 	wbuf := []byte{id, 0x06, byte(addr >> 8), byte(addr), byte(data >> 8), byte(data)}
 
 	//write
-	_, err := Qurry(m, wbuf)
+	_, err := Query(m, wbuf)
 	if err != nil {
 		return err
 	}
@@ -165,7 +164,7 @@ func (m *Master) WriteReg(id uint8, addr uint16, data uint16) error {
 	return nil
 }
 
-//WriteCoils mdbus function 15(0x0f) qurry and return []uint16
+//WriteCoils mdbus function 15(0x0f) query and return []uint16
 func (m *Master) WriteCoils(id uint8, addr uint16, data []bool) error {
 	wbuf := []byte{}
 	if len(data)%8 == 0 {
@@ -186,7 +185,7 @@ func (m *Master) WriteCoils(id uint8, addr uint16, data []bool) error {
 	}
 
 	//write
-	_, err := Qurry(m, wbuf)
+	_, err := Query(m, wbuf)
 	if err != nil {
 		return err
 	}
@@ -194,7 +193,7 @@ func (m *Master) WriteCoils(id uint8, addr uint16, data []bool) error {
 	return nil
 }
 
-//WriteRegs mdbus function 16(0x10) qurry and return []uint16
+//WriteRegs mdbus function 16(0x10) query and return []uint16
 func (m *Master) WriteRegs(id uint8, addr uint16, data []uint16) error {
 
 	wbuf := []byte{id, 0x10, byte(addr >> 8), byte(addr), byte(len(data) >> 8), byte(len(data)), byte(len(data)) * 2}
@@ -205,7 +204,7 @@ func (m *Master) WriteRegs(id uint8, addr uint16, data []uint16) error {
 	}
 
 	//write
-	_, err := Qurry(m, wbuf)
+	_, err := Query(m, wbuf)
 	if err != nil {
 		return err
 	}
@@ -213,8 +212,8 @@ func (m *Master) WriteRegs(id uint8, addr uint16, data []uint16) error {
 	return nil
 }
 
-//Qurry function
-func Qurry(m *Master, data []byte) ([]byte, error) {
+//Query function
+func Query(m *Master, data []byte) ([]byte, error) {
 	result := []byte{}
 	//0. check
 	if len(data) < 6 {
@@ -266,18 +265,25 @@ func Qurry(m *Master, data []byte) ([]byte, error) {
 			return result, err
 		}
 		result = append(result, b[:resLen]...)
+		if len(result) == 5 && CrcCheck(result) {
+			if err := checkException(result); err != nil {
+				return result, err
+			}
+		}
 		total += resLen
 		if total >= rlen {
 			break
 		}
+
 	}
+
 	// 4. check crc
-	if CrcCheck(result) == false {
+	if !CrcCheck(result) {
 		return []byte{}, errors.New("CRC Error")
 	}
 	// 5. check status
-	if result[1] >= 0x81 {
-		return result, errors.New("Qurry got error status")
+	if err := checkException(result); err != nil {
+		return result, err
 	}
 	return result, nil
 }

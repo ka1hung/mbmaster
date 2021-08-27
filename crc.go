@@ -51,7 +51,7 @@ func CrcAppend(data []byte) []byte {
 
 //CrcCheck return checking result
 func CrcCheck(data []byte) bool {
-	if len(data) <= 5 {
+	if len(data) < 5 {
 		return false
 	}
 	// fmt.Println(data[:(len(data) - 2)])
