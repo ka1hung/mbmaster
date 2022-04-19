@@ -10,12 +10,13 @@ import (
 
 //Master Modbus Master config
 type Master struct {
-	Comport  string
-	BaudRate int
-	DataBits int
-	StopBits int
-	Parity   string
-	Timeout  time.Duration
+	Comport         string
+	BaudRate        int
+	DataBits        int
+	StopBits        int
+	Parity          string
+	Timeout         time.Duration
+	RecvDataSpirate bool
 }
 
 // NewMaster creates a new Modbus Master config.
@@ -215,6 +216,9 @@ func (m *Master) WriteRegs(id uint8, addr uint16, data []uint16) error {
 
 //Query function
 func Query(m *Master, data []byte) ([]byte, error) {
+	if m.RecvDataSpirate {
+		return QueryNotContinue(m, data)
+	}
 	result := []byte{}
 	//0. check
 	if len(data) < 6 {
