@@ -54,17 +54,13 @@ func CrcCheck(data []byte) bool {
 	if len(data) < 5 {
 		return false
 	}
-	// fmt.Println(data[:(len(data) - 2)])
+
 	c := crcModbus(data[:len(data)-2])
 	cc := uint16(data[len(data)-2]) + (uint16(data[len(data)-1]) << 8)
 	if c == cc {
 		return true
 	}
 	return false
-
-	// data = append(data, byte(c))
-	// data = append(data, byte(c>>8))
-	// return true
 }
 func crcModbus(data []byte) (crc uint16) {
 	if crcTable == nil {
