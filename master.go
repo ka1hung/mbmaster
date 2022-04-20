@@ -10,13 +10,13 @@ import (
 
 //Master Modbus Master config
 type Master struct {
-	Comport       string
-	BaudRate      int
-	DataBits      int
-	StopBits      int
-	Parity        string
-	Timeout       time.Duration
-	RecvDataSplit bool
+	Comport  string
+	BaudRate int
+	DataBits int
+	StopBits int
+	Parity   string
+	Timeout  time.Duration
+	// RecvDataSplit bool
 }
 
 // NewMaster creates a new Modbus Master config.
@@ -214,81 +214,8 @@ func (m *Master) WriteRegs(id uint8, addr uint16, data []uint16) error {
 	return nil
 }
 
-//Query function
+//Query
 func Query(m *Master, data []byte) ([]byte, error) {
-	if m.RecvDataSplit {
-		return QueryNotContinue(m, data)
-	}
-	result := []byte{}
-	//0. check
-	if len(data) < 6 {
-		return result, errors.New("length not enough(<6)")
-	}
-
-	//1.open serial port
-	port, err := serial.Open(
-		&serial.Config{
-			Address:  m.Comport,
-			BaudRate: m.BaudRate,
-			DataBits: m.DataBits,
-			StopBits: m.StopBits,
-			Parity:   m.Parity,
-			Timeout:  m.Timeout,
-		})
-	if err != nil {
-		return result, err
-	}
-	defer port.Close()
-
-	//2.write
-	data = CrcAppend(data) //append crc
-	_, err = port.Write(data)
-	if err != nil {
-		return result, err
-	}
-
-	//3.read
-	rlen := 8
-	if data[1] == 1 || data[1] == 2 {
-		bs := int(data[4])<<8 | int(data[5])
-		if bs%8 == 0 {
-			rlen = bs/8 + 5
-		} else {
-			rlen = bs/8 + 5 + 1
-		}
-
-	} else if data[1] == 3 || data[1] == 4 {
-		rlen = int(data[4])<<8 | int(data[5])*2 + 5
-	}
-
-	// time.Sleep(10 * time.Millisecond)
-	bs := make([]byte, 1024)
-	resLen, err := port.Read(bs)
-	if err != nil {
-		return result, err
-	}
-	result = bs[:resLen]
-
-	// 4. check crc
-	if !CrcCheck(result) {
-		fmt.Printf("err: %X\n", result)
-		return result, errors.New("CRC Error")
-	}
-	// 5. check status
-	if err := checkException(result); err != nil {
-		fmt.Printf("err: %X\n", result)
-		return result, err
-	}
-	// 6. check length
-	if rlen != len(result) {
-		fmt.Printf("err: %X\n", result)
-		return result, errors.New("data length not match")
-	}
-	return result, nil
-}
-
-//QueryNotContinue function
-func QueryNotContinue(m *Master, data []byte) ([]byte, error) {
 	result := []byte{}
 	//0. check
 	if len(data) < 6 {
@@ -363,3 +290,153 @@ func QueryNotContinue(m *Master, data []byte) ([]byte, error) {
 	}
 	return result, nil
 }
+
+// //Query function
+// func Query(m *Master, data []byte) ([]byte, error) {
+// 	if m.RecvDataSplit {
+// 		return QueryNotContinue(m, data)
+// 	}
+// 	result := []byte{}
+// 	//0. check
+// 	if len(data) < 6 {
+// 		return result, errors.New("length not enough(<6)")
+// 	}
+
+// 	//1.open serial port
+// 	port, err := serial.Open(
+// 		&serial.Config{
+// 			Address:  m.Comport,
+// 			BaudRate: m.BaudRate,
+// 			DataBits: m.DataBits,
+// 			StopBits: m.StopBits,
+// 			Parity:   m.Parity,
+// 			Timeout:  m.Timeout,
+// 		})
+// 	if err != nil {
+// 		return result, err
+// 	}
+// 	defer port.Close()
+
+// 	//2.write
+// 	data = CrcAppend(data) //append crc
+// 	_, err = port.Write(data)
+// 	if err != nil {
+// 		return result, err
+// 	}
+
+// 	//3.read
+// 	rlen := 8
+// 	if data[1] == 1 || data[1] == 2 {
+// 		bs := int(data[4])<<8 | int(data[5])
+// 		if bs%8 == 0 {
+// 			rlen = bs/8 + 5
+// 		} else {
+// 			rlen = bs/8 + 5 + 1
+// 		}
+
+// 	} else if data[1] == 3 || data[1] == 4 {
+// 		rlen = int(data[4])<<8 | int(data[5])*2 + 5
+// 	}
+
+// 	time.Sleep(10 * time.Millisecond)
+// 	bs := make([]byte, 1024)
+// 	resLen, err := port.Read(bs)
+// 	if err != nil {
+// 		return result, err
+// 	}
+// 	result = bs[:resLen]
+
+// 	// 4. check crc
+// 	if !CrcCheck(result) {
+// 		fmt.Printf("err: %X\n", result)
+// 		return result, errors.New("CRC Error")
+// 	}
+// 	// 5. check status
+// 	if err := checkException(result); err != nil {
+// 		fmt.Printf("err: %X\n", result)
+// 		return result, err
+// 	}
+// 	// 6. check length
+// 	if rlen != len(result) {
+// 		fmt.Printf("err: %X\n", result)
+// 		return result, errors.New("data length not match")
+// 	}
+// 	return result, nil
+// }
+
+// //QueryNotContinue function
+// func QueryNotContinue(m *Master, data []byte) ([]byte, error) {
+// 	result := []byte{}
+// 	//0. check
+// 	if len(data) < 6 {
+// 		return result, errors.New("length not enough(<6)")
+// 	}
+
+// 	//1.open serial port
+// 	port, err := serial.Open(
+// 		&serial.Config{
+// 			Address:  m.Comport,
+// 			BaudRate: m.BaudRate,
+// 			DataBits: m.DataBits,
+// 			StopBits: m.StopBits,
+// 			Parity:   m.Parity,
+// 			Timeout:  m.Timeout,
+// 		})
+// 	if err != nil {
+// 		return result, err
+// 	}
+// 	defer port.Close()
+
+// 	//2.write
+// 	data = CrcAppend(data) //append crc
+// 	_, err = port.Write(data)
+// 	if err != nil {
+// 		return result, err
+// 	}
+
+// 	//3.read
+// 	rlen := 8
+// 	if data[1] == 1 || data[1] == 2 {
+// 		bs := int(data[4])<<8 | int(data[5])
+// 		if bs%8 == 0 {
+// 			rlen = bs/8 + 5
+// 		} else {
+// 			rlen = bs/8 + 5 + 1
+// 		}
+
+// 	} else if data[1] == 3 || data[1] == 4 {
+// 		rlen = int(data[4])<<8 | int(data[5])*2 + 5
+// 	}
+
+// 	total := 0
+// 	for {
+// 		time.Sleep(10 * time.Millisecond)
+// 		b := make([]byte, 1024)
+// 		resLen, err := port.Read(b)
+// 		if err != nil {
+// 			return result, err
+// 		}
+// 		result = append(result, b[:resLen]...)
+// 		if len(result) == 5 && CrcCheck(result) {
+// 			if err := checkException(result); err != nil {
+// 				return result, err
+// 			}
+// 		}
+// 		total += resLen
+// 		if total >= rlen {
+// 			break
+// 		}
+// 	}
+
+// 	// 4. check crc
+// 	if !CrcCheck(result) {
+// 		fmt.Printf("err: %X\n", result)
+// 		return result, errors.New("CRC Error")
+// 	}
+// 	// 5. check status
+// 	if err := checkException(result); err != nil {
+// 		fmt.Printf("err: %X\n", result)
+// 		return result, err
+// 	}
+// 	return result, nil
+// }
