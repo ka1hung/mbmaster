@@ -16,6 +16,10 @@ type Master struct {
 	StopBits int
 	Parity   string
 	Timeout  time.Duration
+	// OnNoise, if set, is called when a valid response was received together
+	// with extra noise bytes (raw = everything read, frame = the valid frame).
+	// The query still succeeds; this is for diagnosing RS-485 wiring issues.
+	OnNoise func(raw, frame []byte)
 	// RecvDataSplit bool
 }
 
@@ -215,11 +219,13 @@ func (m *Master) WriteRegs(id uint8, addr uint16, data []uint16) error {
 }
 
 //Query
+// Query sends an RTU request (data = request without CRC) and returns the
+// response frame with CRC. Noise bytes before or after the response are
+// discarded; see ExtractFrame.
 func Query(m *Master, data []byte) ([]byte, error) {
-	result := []byte{}
 	//0. check
 	if len(data) < 6 {
-		return result, errors.New("length not enough(<6)")
+		return []byte{}, errors.New("length not enough(<6)")
 	}
 
 	//1.open serial port
@@ -233,62 +239,51 @@ func Query(m *Master, data []byte) ([]byte, error) {
 			Timeout:  m.Timeout,
 		})
 	if err != nil {
-		return result, err
+		return []byte{}, err
 	}
 	defer port.Close()
 
 	//2.write
-	data = CrcAppend(data) //append crc
-	_, err = port.Write(data)
-	if err != nil {
-		return result, err
+	req := CrcAppend(append([]byte(nil), data...)) //append crc
+	if _, err = port.Write(req); err != nil {
+		return []byte{}, err
 	}
 
-	//3.read
-	rlen := 8
-	if data[1] == 1 || data[1] == 2 {
-		bs := int(data[4])<<8 | int(data[5])
-		if bs%8 == 0 {
-			rlen = bs/8 + 5
-		} else {
-			rlen = bs/8 + 5 + 1
-		}
-
-	} else if data[1] == 3 || data[1] == 4 {
-		rlen = int(data[4])<<8 | int(data[5])*2 + 5
+	//3.read until a valid frame shows up, the line goes quiet, or too much
+	//  garbage piles up
+	maxLen := ResponseLen(data)
+	if maxLen == 0 {
+		maxLen = 256
 	}
+	maxLen = maxLen*2 + 64
 
-	total := 0
+	raw := []byte{}
+	b := make([]byte, 1024)
 	for {
 		time.Sleep(10 * time.Millisecond)
-		b := make([]byte, 1024)
-		resLen, err := port.Read(b)
-		if err != nil {
-			return result, err
-		}
-		result = append(result, b[:resLen]...)
-		if len(result) == 5 && CrcCheck(result) {
-			if err := checkException(result); err != nil {
-				return result, err
-			}
-		}
-		total += resLen
-		if total >= rlen {
-			break
-		}
-	}
+		n, rerr := port.Read(b)
+		raw = append(raw, b[:n]...)
 
-	// 4. check crc
-	if !CrcCheck(result) {
-		fmt.Printf("err: %X\n", result)
-		return result, errors.New("CRC Error")
+		if frame, ok := ExtractFrame(raw, data); ok {
+			if len(frame) != len(raw) && m.OnNoise != nil {
+				m.OnNoise(raw, frame)
+			}
+			//4. check status
+			if err := checkException(frame); err != nil {
+				return frame, err
+			}
+			return frame, nil
+		}
+		if rerr != nil {
+			if rerr == serial.ErrTimeout && len(raw) > 0 {
+				return raw, fmt.Errorf("%w: % X", ErrCRC, raw)
+			}
+			return raw, rerr
+		}
+		if len(raw) >= maxLen {
+			return raw, fmt.Errorf("%w: % X", ErrCRC, raw)
+		}
 	}
-	// 5. check status
-	if err := checkException(result); err != nil {
-		fmt.Printf("err: %X\n", result)
-		return result, err
-	}
-	return result, nil
 }
 
 // //Query function

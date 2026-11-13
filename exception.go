@@ -32,9 +32,9 @@ func exception(code byte) string {
 		return fmt.Sprintf("modbus error (%02X negative acknowledge)", code)
 	case 0x08:
 		return fmt.Sprintf("modbus error (%02X memory parity error)", code)
-	case 0x10:
+	case 0x0A:
 		return fmt.Sprintf("modbus error (%02X gateway path unavailable)", code)
-	case 0x11:
+	case 0x0B:
 		return fmt.Sprintf("modbus error (%02X gateway target device failed to respond)", code)
 
 	}
